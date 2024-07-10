@@ -64,8 +64,14 @@ private:
     /// Ros node stuff
     ros::NodeHandle nh_;
     ros::NodeHandle pnh_;
-    int queue_size_{1};
-
+    int queue_size_{5};
+    int pepe;
+    std::vector<double> comp_times;
+    double then_;
+    std::chrono::duration<float> elapsed_seconds;
+    double avg_comp_time;
+    double total_time =0,total_duration = 0;
+    int total_frame=0;
     /// Tools for broadcasting TFs.
     tf2_ros::TransformBroadcaster tf_broadcaster_;
     tf2_ros::Buffer tf2_buffer_;
@@ -78,6 +84,8 @@ private:
 
     /// Data publishers.
     ros::Publisher odom_publisher_;
+    ros::Publisher odom_publisher_2;
+    ros::Publisher comp_time_publisher;
     ros::Publisher frame_publisher_;
     ros::Publisher kpoints_publisher_;
     ros::Publisher map_publisher_;

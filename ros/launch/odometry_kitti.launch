@@ -1,17 +1,20 @@
 <?xml version="1.0"?>
 <launch>
   <!-- ROS paramaters -->
-  <arg name="bagfile" default=""/>
+  <!-- Set use_sim_time true to generate trajectory bag file in same time domain -->
+  <param name="/use_sim_time" value="true"/>
+  <arg name="bagfile" default="/home/dronomy/TFM_ws/kitti_data/odom/dataset/sequences/07/compare_ros/kitti_2011_09_30_drive_0027_synced"/>
   <arg name="visualize" default="true"/>
   <arg name="odom_frame" default="odom"/>
-  <arg name="base_frame" default=""/>
-  <arg name="topic" default=""/>
-  <arg name="publish_odom_tf" default="false"/>
+  <arg name="base_frame" default="velodyne"/>
+  <arg name="topic" default="/velodyne_points"/>
+  <arg name="publish_odom_tf" default="true"/>
+  <arg name="record" default="false"/>
 
   <!-- KISS-ICP paramaters -->
   <arg name="deskew" default="false"/>
   <arg name="max_range" default="100.0" />
-  <arg name="min_range" default="5.0" />
+  <arg name="min_range" default="1.0" />
   <arg name="voxel_size" default="" />
 
   <!-- Odometry node -->
@@ -32,15 +35,20 @@
     <param name="min_motion_th" value="0.1" />
   </node>
 
+  <!-- Remap point cloud topic -->
+	<remap from="points_raw" to="velodyne_points" />
   <!-- Rosbag player, if bagfile argument was specified -->
+  
   <group if="$(eval bagfile != '')">
-    <param name="/use_sim_time" value="true"/>
-    <node pkg="rosbag" type="play" name="player" args="$(arg bagfile)" output="screen"/>
+    <node pkg="rosbag" type="play" name="player" args="--clock $(arg bagfile)/kitti.bag --topics /points_raw" output="screen"/>
   </group>
 
   <!-- Visualizer -->
   <group if="$(arg visualize)">
     <node pkg="rviz" type="rviz" name="rviz" args="-d $(find kiss_icp)/rviz/kiss_icp_ros1.rviz"/>
+  </group>
+  <group if="$(arg record)">
+    <node pkg="rosbag" type="record" name="recorder" args="-o /home/dronomy/TFM_ws/odom_tf /tf /kiss/odometry /kiss/trajectory" output="screen"/>
   </group>
 
 </launch>

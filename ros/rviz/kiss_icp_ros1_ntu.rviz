@@ -65,8 +65,8 @@ Visualization Manager:
     - Alpha: 0.5
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: 3.3837289810180664
-        Min Value: -30.80302619934082
+        Max Value: 15.35044002532959
+        Min Value: -24.74839973449707
         Value: true
       Axis: Z
       Channel Name: intensity
@@ -160,39 +160,11 @@ Visualization Manager:
       Topic: /kiss/trajectory
       Unreliable: false
       Value: true
-    - Alpha: 1
-      Autocompute Intensity Bounds: true
-      Autocompute Value Bounds:
-        Max Value: 10
-        Min Value: -10
-        Value: true
-      Axis: Z
-      Channel Name: intensity
-      Class: rviz/PointCloud2
-      Color: 255; 255; 255
-      Color Transformer: Intensity
-      Decay Time: 0
-      Enabled: false
-      Invert Rainbow: false
-      Max Color: 255; 255; 255
-      Min Color: 0; 0; 0
-      Name: PointCloud2
-      Position Transformer: XYZ
-      Queue Size: 10
-      Selectable: true
-      Size (Pixels): 3
-      Size (m): 0.10000000149011612
-      Style: Flat Squares
-      Topic: /velodyne_points
-      Unreliable: false
-      Use Fixed Frame: true
-      Use rainbow: true
-      Value: false
   Enabled: true
   Global Options:
     Background Color: 0; 0; 0
     Default Light: true
-    Fixed Frame: velodyne
+    Fixed Frame: world
     Frame Rate: 30
   Name: root
   Tools:
@@ -216,7 +188,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 105.32349395751953
+      Distance: 39.54323196411133
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -224,17 +196,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: -6.558090686798096
-        Y: 1.001164436340332
-        Z: 3.466109037399292
+        X: -4.974391460418701
+        Y: -10.066824913024902
+        Z: 7.297576427459717
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.4447973370552063
+      Pitch: 0.1602027863264084
       Target Frame: <Fixed Frame>
-      Yaw: 5.451725959777832
+      Yaw: 0.4567437171936035
     Saved: ~
 Window Geometry:
   Displays:

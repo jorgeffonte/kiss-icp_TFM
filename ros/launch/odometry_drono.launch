@@ -1,18 +1,19 @@
 <?xml version="1.0"?>
 <launch>
   <!-- ROS paramaters -->
+  <param name="/use_sim_time" value="true"/>
   <arg name="bagfile" default=""/>
   <arg name="visualize" default="true"/>
   <arg name="odom_frame" default="odom"/>
-  <arg name="base_frame" default=""/>
-  <arg name="topic" default=""/>
-  <arg name="publish_odom_tf" default="false"/>
+  <arg name="base_frame" default="os_sensor"/>
+  <arg name="topic" default="/ouster/points"/>
+  <arg name="publish_odom_tf" default="true"/>
 
   <!-- KISS-ICP paramaters -->
-  <arg name="deskew" default="false"/>
-  <arg name="max_range" default="100.0" />
-  <arg name="min_range" default="5.0" />
-  <arg name="voxel_size" default="" />
+  <arg name="deskew" default="true"/>
+  <arg name="max_range" default="5.0" />
+  <arg name="min_range" default="1" />
+  <arg name="voxel_size" default="0.1" />
 
   <!-- Odometry node -->
   <node pkg="kiss_icp" type="odometry_node" name="odometry_node" output="screen">
@@ -34,7 +35,6 @@
 
   <!-- Rosbag player, if bagfile argument was specified -->
   <group if="$(eval bagfile != '')">
-    <param name="/use_sim_time" value="true"/>
     <node pkg="rosbag" type="play" name="player" args="$(arg bagfile)" output="screen"/>
   </group>
 

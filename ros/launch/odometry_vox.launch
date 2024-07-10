@@ -1,17 +1,22 @@
 <?xml version="1.0"?>
 <launch>
+  <!-- Set use_sim_time true to generate trajectory bag file in same time domain -->
+  <param name="/use_sim_time" value="true"/>
   <!-- ROS paramaters -->
-  <arg name="bagfile" default=""/>
+  <arg name="bagfile" default="/home/dronomy/TFM_ws/vox_data/arche_flight1_2ms_indoor-outdoor-figure-8.bag "/>
+  <arg name="bagfile2" default="/home/dronomy/TFM_ws/vox_data/vox_gt.bag"/>
+
   <arg name="visualize" default="true"/>
   <arg name="odom_frame" default="odom"/>
-  <arg name="base_frame" default=""/>
-  <arg name="topic" default=""/>
-  <arg name="publish_odom_tf" default="false"/>
+  <arg name="base_frame" default="/os1_lidar"/>
+  <arg name="topic" default="/velodyne_points"/>
+  <arg name="publish_odom_tf" default="true"/>
+  <arg name="record" default="false"/>
 
   <!-- KISS-ICP paramaters -->
-  <arg name="deskew" default="false"/>
+  <arg name="deskew" default="true"/>
   <arg name="max_range" default="100.0" />
-  <arg name="min_range" default="5.0" />
+  <arg name="min_range" default="1.0" />
   <arg name="voxel_size" default="" />
 
   <!-- Odometry node -->
@@ -31,16 +36,25 @@
     <param name="initial_threshold" value="2.0"/>
     <param name="min_motion_th" value="0.1" />
   </node>
-
+  <node pkg="tf2_ros" type="static_transform_publisher"
+  name="enu_pub" args="0 0 0 0 0 0 1 odom enu " />  
+  <!-- Remap point cloud topic -->
+	<remap from="/penguin/os1_cloud_node/points" to="velodyne_points" />
   <!-- Rosbag player, if bagfile argument was specified -->
+  
   <group if="$(eval bagfile != '')">
-    <param name="/use_sim_time" value="true"/>
-    <node pkg="rosbag" type="play" name="player" args="$(arg bagfile)" output="screen"/>
+    <node pkg="rosbag" type="play" name="player" args="--clock $(arg bagfile) $(arg bagfile2)  " output="screen"/>
   </group>
+  <!-- <group if="$(eval bagfile != '')">
+    <node pkg="rosbag" type="play" name="playergt" args="-clock $(arg bagfile2) " output="screen"/>
+  </group> -->
 
   <!-- Visualizer -->
   <group if="$(arg visualize)">
     <node pkg="rviz" type="rviz" name="rviz" args="-d $(find kiss_icp)/rviz/kiss_icp_ros1.rviz"/>
+  </group>
+  <group if="$(arg record)">
+    <node pkg="rosbag" type="record" name="recorder" args="-o /home/dronomy/TFM_ws/odom_tf /tf /kiss/odometry /kiss/trajectory" output="screen"/>
   </group>
 
 </launch>

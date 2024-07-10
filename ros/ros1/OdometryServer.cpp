@@ -36,6 +36,7 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/TransformStamped.h>
 #include <nav_msgs/Odometry.h>
+#include <std_msgs/Float64.h>
 #include <nav_msgs/Path.h>
 #include <ros/init.h>
 #include <ros/node_handle.h>
@@ -77,6 +78,9 @@ OdometryServer::OdometryServer(const ros::NodeHandle &nh, const ros::NodeHandle 
 
     // Initialize publishers
     odom_publisher_ = pnh_.advertise<nav_msgs::Odometry>("/kiss/odometry", queue_size_);
+    odom_publisher_2 = pnh_.advertise<nav_msgs::Odometry>("/Odometry", queue_size_);
+    comp_time_publisher = pnh_.advertise<std_msgs::Float64>("/comp_time", queue_size_);
+
     traj_publisher_ = pnh_.advertise<nav_msgs::Path>("/kiss/trajectory", queue_size_);
     if (publish_debug_clouds_) {
         frame_publisher_ = pnh_.advertise<sensor_msgs::PointCloud2>("/kiss/frame", queue_size_);
@@ -117,11 +121,25 @@ void OdometryServer::RegisterFrame(const sensor_msgs::PointCloud2::ConstPtr &msg
         if (!config_.deskew) return {};
         return GetTimestamps(msg);
     }();
+    this->then_ = ros::Time::now().toSec();
     const auto egocentric_estimation = (base_frame_.empty() || base_frame_ == cloud_frame_id);
-
+    std::chrono::time_point<std::chrono::system_clock> start, end;
+    start = std::chrono::system_clock::now();
+    auto tstart = std::chrono::high_resolution_clock::now();
     // Register frame, main entry point to KISS-ICP pipeline
     const auto &[frame, keypoints] = odometry_.RegisterFrame(points, timestamps);
-
+    end = std::chrono::system_clock::now();
+    auto tend = std::chrono::high_resolution_clock::now();
+    this->elapsed_seconds = tend - tstart;
+    double duration = std::chrono::duration_cast<std::chrono::duration<double>>(tend - tstart).count();
+    this->total_frame++;
+    
+    float time_temp = elapsed_seconds.count() * 1000;
+    this->total_time += time_temp;
+    this->total_duration += duration;
+    ROS_INFO("curr time CHRONO %f .  average odom estimation time %f ms \n \n", time_temp, this->total_time / this->total_frame);
+    ROS_INFO("curr time OMP %f .  average odom estimation time %f ms \n \n", duration * 1000, this->total_duration / this->total_frame);
+    this->comp_times.push_back(ros::Time::now().toSec() - this->then_);
     // Compute the pose using KISS, ego-centric to the LiDAR
     const Sophus::SE3d kiss_pose = odometry_.poses().back();
 
@@ -131,10 +149,12 @@ void OdometryServer::RegisterFrame(const sensor_msgs::PointCloud2::ConstPtr &msg
         const Sophus::SE3d cloud2base = LookupTransform(base_frame_, cloud_frame_id);
         return cloud2base * kiss_pose * cloud2base.inverse();
     }();
-
+    
     // Spit the current estimated pose to ROS msgs
     PublishOdometry(pose, msg->header.stamp, cloud_frame_id);
+    this->avg_comp_time = std::accumulate(this->comp_times.begin(), this->comp_times.end(), 0.0) / this->comp_times.size();
 
+    std::cout << "Computation Time :: " << std::setfill(' ') << std::setw(6) << this->comp_times.back()*1000. << " ms    // Avg: " << std::setw(5) << this->avg_comp_time*1000. << std::endl;
     // Publishing this clouds is a bit costly, so do it only if we are debugging
     if (publish_debug_clouds_) {
         PublishClouds(frame, keypoints, msg->header.stamp, cloud_frame_id);
@@ -169,7 +189,11 @@ void OdometryServer::PublishOdometry(const Sophus::SE3d &pose,
     odom_msg.header.stamp = stamp;
     odom_msg.header.frame_id = odom_frame_;
     odom_msg.pose.pose = tf2::sophusToPose(pose);
+    std_msgs::Float64 time_msg;
+    time_msg.data = this->elapsed_seconds.count() * 1000;
     odom_publisher_.publish(odom_msg);
+    comp_time_publisher.publish(time_msg);
+    odom_publisher_2.publish(odom_msg);
 }
 
 void OdometryServer::PublishClouds(const std::vector<Eigen::Vector3d> frame,
