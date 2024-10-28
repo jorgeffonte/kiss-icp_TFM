@@ -50,7 +50,7 @@ namespace kiss_icp_ros {
 using utils::EigenToPointCloud2;
 using utils::GetTimestamps;
 using utils::PointCloud2ToEigen;
-
+bool max_set = false;
 OdometryServer::OdometryServer(const ros::NodeHandle &nh, const ros::NodeHandle &pnh)
     : nh_(nh), pnh_(pnh), tf2_listener_(tf2_ros::TransformListener(tf2_buffer_)) {
     pnh_.param("base_frame", base_frame_, base_frame_);
@@ -115,6 +115,7 @@ Sophus::SE3d OdometryServer::LookupTransform(const std::string &target_frame,
 }
 
 void OdometryServer::RegisterFrame(const sensor_msgs::PointCloud2::ConstPtr &msg) {
+    auto t1 = std::chrono::high_resolution_clock::now();
     const auto cloud_frame_id = msg->header.frame_id;
     const auto points = PointCloud2ToEigen(msg);
     const auto timestamps = [&]() -> std::vector<double> {
@@ -123,23 +124,23 @@ void OdometryServer::RegisterFrame(const sensor_msgs::PointCloud2::ConstPtr &msg
     }();
     this->then_ = ros::Time::now().toSec();
     const auto egocentric_estimation = (base_frame_.empty() || base_frame_ == cloud_frame_id);
-    std::chrono::time_point<std::chrono::system_clock> start, end;
-    start = std::chrono::system_clock::now();
-    auto tstart = std::chrono::high_resolution_clock::now();
+    // std::chrono::time_point<std::chrono::system_clock> start, end;
+    // start = std::chrono::system_clock::now();
+    // auto tstart = std::chrono::high_resolution_clock::now();
     // Register frame, main entry point to KISS-ICP pipeline
     const auto &[frame, keypoints] = odometry_.RegisterFrame(points, timestamps);
-    end = std::chrono::system_clock::now();
-    auto tend = std::chrono::high_resolution_clock::now();
-    this->elapsed_seconds = tend - tstart;
-    double duration = std::chrono::duration_cast<std::chrono::duration<double>>(tend - tstart).count();
-    this->total_frame++;
+    // end = std::chrono::system_clock::now();
+    // auto tend = std::chrono::high_resolution_clock::now();
+    // this->elapsed_seconds = tend - tstart;
+    // double duration = std::chrono::duration_cast<std::chrono::duration<double>>(tend - tstart).count();
+    // this->total_frame++;
     
-    float time_temp = elapsed_seconds.count() * 1000;
-    this->total_time += time_temp;
-    this->total_duration += duration;
-    ROS_INFO("curr time CHRONO %f .  average odom estimation time %f ms \n \n", time_temp, this->total_time / this->total_frame);
-    ROS_INFO("curr time OMP %f .  average odom estimation time %f ms \n \n", duration * 1000, this->total_duration / this->total_frame);
-    this->comp_times.push_back(ros::Time::now().toSec() - this->then_);
+    // float time_temp = elapsed_seconds.count() * 1000;
+    // this->total_time += time_temp;
+    // this->total_duration += duration;
+    // ROS_INFO("curr time CHRONO %f .  average odom estimation time %f ms \n \n", time_temp, this->total_time / this->total_frame);
+    // ROS_INFO("curr time OMP %f .  average odom estimation time %f ms \n \n", duration * 1000, this->total_duration / this->total_frame);
+    // this->comp_times.push_back(ros::Time::now().toSec() - this->then_);
     // Compute the pose using KISS, ego-centric to the LiDAR
     const Sophus::SE3d kiss_pose = odometry_.poses().back();
 
@@ -149,12 +150,23 @@ void OdometryServer::RegisterFrame(const sensor_msgs::PointCloud2::ConstPtr &msg
         const Sophus::SE3d cloud2base = LookupTransform(base_frame_, cloud_frame_id);
         return cloud2base * kiss_pose * cloud2base.inverse();
     }();
-    
+    // if   Eigen::Vector3f pose z >5 call max range 100
+    // if (!max_set && abs(pose.translation().z()) >= 3) {
+    //     odometry_.setMaxRange(50);
+    //     config_.max_range= 50;
+    //     max_set = true;
+    //     printf("Max range set to 100");
+    // }
     // Spit the current estimated pose to ROS msgs
+    auto t2 = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> duration1 = t2 - t1;
+    this->elapsed_seconds=duration1;
     PublishOdometry(pose, msg->header.stamp, cloud_frame_id);
-    this->avg_comp_time = std::accumulate(this->comp_times.begin(), this->comp_times.end(), 0.0) / this->comp_times.size();
+    ROS_INFO("curr time CHRONO %f \n \n", duration1.count()*1000);
 
-    std::cout << "Computation Time :: " << std::setfill(' ') << std::setw(6) << this->comp_times.back()*1000. << " ms    // Avg: " << std::setw(5) << this->avg_comp_time*1000. << std::endl;
+    // this->avg_comp_time = std::accumulate(this->comp_times.begin(), this->comp_times.end(), 0.0) / this->comp_times.size();
+    
+    // std::cout << "Computation Time :: " << std::setfill(' ') << std::setw(6) << this->comp_times.back()*1000. << " ms    // Avg: " << std::setw(5) << this->avg_comp_time*1000. << std::endl;
     // Publishing this clouds is a bit costly, so do it only if we are debugging
     if (publish_debug_clouds_) {
         PublishClouds(frame, keypoints, msg->header.stamp, cloud_frame_id);

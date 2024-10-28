@@ -64,7 +64,7 @@ private:
     /// Ros node stuff
     ros::NodeHandle nh_;
     ros::NodeHandle pnh_;
-    int queue_size_{5};
+    int queue_size_{1};
     int pepe;
     std::vector<double> comp_times;
     double then_;

@@ -78,6 +78,9 @@ KissICP::Vector3dVectorTuple KissICP::RegisterFrame(const std::vector<Eigen::Vec
     local_map_.Update(frame_downsample, new_pose);
     poses_.push_back(new_pose);
     return {frame, source};
+    /*For ntu but do no solve 
+    return {cropped_frame, source};
+    */
 }
 
 KissICP::Vector3dVectorTuple KissICP::Voxelize(const std::vector<Eigen::Vector3d> &frame) const {
@@ -85,6 +88,10 @@ KissICP::Vector3dVectorTuple KissICP::Voxelize(const std::vector<Eigen::Vector3d
     const auto frame_downsample = kiss_icp::VoxelDownsample(frame, voxel_size * 0.5);
     const auto source = kiss_icp::VoxelDownsample(frame_downsample, voxel_size * 1.5);
     return {source, frame_downsample};
+    /* for ntu but do not solve the problem
+    // const auto source = kiss_icp::VoxelDownsample(frame_downsample, voxel_size * 1.5);
+    return {frame_downsample, frame_downsample};
+    */
 }
 
 double KissICP::GetAdaptiveThreshold() {

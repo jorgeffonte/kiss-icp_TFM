@@ -72,6 +72,9 @@ public:
     // Extra C++ API to facilitate ROS debugging
     std::vector<Eigen::Vector3d> LocalMap() const { return local_map_.Pointcloud(); };
     std::vector<Sophus::SE3d> poses() const { return poses_; };
+    void setMaxRange(float max_range){local_map_.max_distance_=max_range;
+    config_.max_range=max_range;
+    printf("max_range: %f\n",max_range);}
 
 private:
     // KISS-ICP pipeline modules
